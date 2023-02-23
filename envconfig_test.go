@@ -34,56 +34,53 @@ func (cu *CustomURL) UnmarshalBinary(data []byte) error {
 }
 
 type Specification struct {
-	Embedded                     `desc:"can we document a struct"`
-	EmbeddedButIgnored           `ignored:"true"`
-	Debug                        bool
-	Port                         int
-	Rate                         float32
-	User                         string
-	TTL                          uint32
-	Timeout                      time.Duration
-	AdminUsers                   []string
-	MagicNumbers                 []int
-	EmptyNumbers                 []int
-	ByteSlice                    []byte
-	ColorCodes                   map[string]int
-	MultiWordVar                 string
-	MultiWordVarWithAutoSplit    uint32 `split_words:"true"`
-	MultiWordACRWithAutoSplit    uint32 `split_words:"true"`
-	SomePointer                  *string
-	SomePointerWithDefault       *string `default:"foo2baz" desc:"foorbar is the word"`
-	MultiWordVarWithAlt          string  `envconfig:"MULTI_WORD_VAR_WITH_ALT" desc:"what alt"`
-	MultiWordVarWithLowerCaseAlt string  `envconfig:"multi_word_var_with_lower_case_alt"`
-	NoPrefixWithAlt              string  `envconfig:"SERVICE_HOST"`
-	DefaultVar                   string  `default:"foobar"`
-	RequiredVar                  string  `required:"True"`
-	NoPrefixDefault              string  `envconfig:"BROKER" default:"127.0.0.1"`
-	RequiredDefault              string  `required:"true" default:"foo2bar"`
-	Ignored                      string  `ignored:"true"`
+	Embedded                     `envconfig:"EMBEDDED" desc:"can we document a struct"`
+	EmbeddedButIgnored           `envconfig:"EMBEDDED_BUT_IGNORED" ignored:"true"`
+	Debug                        bool           `envconfig:"DEBUG"`
+	Port                         int            `envconfig:"PORT"`
+	Rate                         float32        `envconfig:"RATE"`
+	User                         string         `envconfig:"USER"`
+	TTL                          uint32         `envconfig:"TTL"`
+	Timeout                      time.Duration  `envconfig:"TIMEOUT"`
+	AdminUsers                   []string       `envconfig:"ADMINUSERS"`
+	MagicNumbers                 []int          `envconfig:"MAGICNUMBERS"`
+	EmptyNumbers                 []int          `envconfig:"EMPTYNUMBERS"`
+	ByteSlice                    []byte         `envconfig:"BYTESLICE"`
+	ColorCodes                   map[string]int `envconfig:"COLORCODES"`
+	SomePointer                  *string        `envconfig:"SOMEPOINTER"`
+	SomePointerWithDefault       *string        `envconfig:"SOMEPOINTERWITHDEFAULT" default:"foo2baz" desc:"foorbar is the word"`
+	MultiWordVarWithAlt          string         `envconfig:"MULTI_WORD_VAR_WITH_ALT" desc:"what alt"`
+	MultiWordVarWithLowerCaseAlt string         `envconfig:"multi_word_var_with_lower_case_alt"`
+	NoPrefixWithAlt              string         `envconfig:"SERVICE_HOST"`
+	DefaultVar                   string         `envconfig:"DEFAULTVAR" default:"foobar"`
+	RequiredVar                  string         `envconfig:"REQUIREDVAR" required:"True"`
+	NoPrefixDefault              string         `envconfig:"BROKER" default:"127.0.0.1"`
+	RequiredDefault              string         `envconfig:"REQUIREDDEFAULT" required:"true" default:"foo2bar"`
+	Ignored                      string         `envconfig:"IGNORED" ignored:"true"`
 	NestedSpecification          struct {
 		Property            string `envconfig:"inner"`
-		PropertyWithDefault string `default:"fuzzybydefault"`
+		PropertyWithDefault string `envconfig:"PROPERTYWITHDEFAULT" default:"fuzzybydefault"`
 	} `envconfig:"outer"`
-	AfterNested  string
+	AfterNested  string              `envconfig:"AFTERNESTED"`
 	DecodeStruct HonorDecodeInStruct `envconfig:"honor"`
-	Datetime     time.Time
-	MapField     map[string]string `default:"one:two,three:four"`
-	UrlValue     CustomURL
-	UrlPointer   *CustomURL
+	Datetime     time.Time           `envconfig:"DATETIME"`
+	MapField     map[string]string   `envconfig:"MAPFIELD" default:"one:two,three:four"`
+	UrlValue     CustomURL           `envconfig:"URLVALUE"`
+	UrlPointer   *CustomURL          `envconfig:"URLPOINTER"`
 }
 
 type Embedded struct {
-	Enabled             bool `desc:"some embedded value"`
-	EmbeddedPort        int
-	MultiWordVar        string
+	Enabled             bool   `envconfig:"ENABLED" desc:"some embedded value"`
+	EmbeddedPort        int    `envconfig:"EMBEDDEDPORT"`
+	MultiWordVar        string `envconfig:"MULTIWORDVAR"`
 	MultiWordVarWithAlt string `envconfig:"MULTI_WITH_DIFFERENT_ALT"`
 	EmbeddedAlt         string `envconfig:"EMBEDDED_WITH_ALT"`
-	EmbeddedIgnored     string `ignored:"true"`
+	EmbeddedIgnored     string `envconfig:"EMBEDDEDIGNORED" ignored:"true"`
 }
 
 type EmbeddedButIgnored struct {
-	FirstEmbeddedButIgnored  string
-	SecondEmbeddedButIgnored string
+	FirstEmbeddedButIgnored  string `envconfig:"FIRST_EMBEDDED_BUT_IGNORED"`
+	SecondEmbeddedButIgnored string `envconfig:"SECOND_EMBEDDED_BUT_IGNORED"`
 }
 
 func TestProcess(t *testing.T) {
@@ -115,8 +112,11 @@ func TestProcess(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	if s.NoPrefixWithAlt != "127.0.0.1" {
-		t.Errorf("expected %v, got %v", "127.0.0.1", s.NoPrefixWithAlt)
+	// This is an inversion of the original test, since we have removed the
+	// fallback of the Alt keyword, it no longer magically reads the non-prefixed
+	// version.
+	if s.NoPrefixWithAlt != "" {
+		t.Errorf("expected %v, got %v", "", s.NoPrefixWithAlt)
 	}
 	if !s.Debug {
 		t.Errorf("expected %v, got %v", true, s.Debug)
@@ -195,14 +195,6 @@ func TestProcess(t *testing.T) {
 
 	if expected := time.Date(2016, 8, 16, 18, 57, 05, 0, time.UTC); !s.Datetime.Equal(expected) {
 		t.Errorf("expected %s, got %s", expected.Format(time.RFC3339), s.Datetime.Format(time.RFC3339))
-	}
-
-	if s.MultiWordVarWithAutoSplit != 24 {
-		t.Errorf("expected %q, got %q", 24, s.MultiWordVarWithAutoSplit)
-	}
-
-	if s.MultiWordACRWithAutoSplit != 25 {
-		t.Errorf("expected %d, got %d", 25, s.MultiWordACRWithAutoSplit)
 	}
 
 	u, err := url.Parse("https://github.com/kelseyhightower/envconfig")
@@ -287,23 +279,6 @@ func TestParseErrorUint(t *testing.T) {
 	}
 	if s.TTL != 0 {
 		t.Errorf("expected %v, got %v", 0, s.TTL)
-	}
-}
-
-func TestParseErrorSplitWords(t *testing.T) {
-	var s Specification
-	os.Clearenv()
-	os.Setenv("ENV_CONFIG_MULTI_WORD_VAR_WITH_AUTO_SPLIT", "shakespeare")
-	err := Process("env_config", &s)
-	v, ok := err.(*ParseError)
-	if !ok {
-		t.Errorf("expected ParseError, got %v", v)
-	}
-	if v.FieldName != "MultiWordVarWithAutoSplit" {
-		t.Errorf("expected %s, got %v", "", v.FieldName)
-	}
-	if s.MultiWordVarWithAutoSplit != 0 {
-		t.Errorf("expected %v, got %v", 0, s.MultiWordVarWithAutoSplit)
 	}
 }
 
@@ -438,8 +413,10 @@ func TestAlternateNameDefaultVar(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	if s.NoPrefixDefault != "betterbroker" {
-		t.Errorf("expected %q, got %q", "betterbroker", s.NoPrefixDefault)
+	// This is also an inversion of the original test, since we no longer fallback
+	// on the non-prefixed Alt version if the specified tag is not found.
+	if s.NoPrefixDefault != "127.0.0.1" {
+		t.Errorf("expected %q, got %q", "127.0.0.1", s.NoPrefixDefault)
 	}
 
 	os.Clearenv()
@@ -593,10 +570,10 @@ func TestNonPointerFailsProperly(t *testing.T) {
 
 func TestCustomValueFields(t *testing.T) {
 	var s struct {
-		Foo    string
-		Bar    bracketed
-		Baz    quoted
-		Struct setterStruct
+		Foo    string       `envconfig:"FOO"`
+		Bar    bracketed    `envconfig:"BAR"`
+		Baz    quoted       `envconfig:"BAZ"`
+		Struct setterStruct `envconfig:"STRUCT"`
 	}
 
 	// Set would panic when the receiver is nil,
@@ -632,10 +609,10 @@ func TestCustomValueFields(t *testing.T) {
 
 func TestCustomPointerFields(t *testing.T) {
 	var s struct {
-		Foo    string
-		Bar    *bracketed
-		Baz    *quoted
-		Struct *setterStruct
+		Foo    string        `envconfig:"FOO"`
+		Bar    *bracketed    `envconfig:"BAR"`
+		Baz    *quoted       `envconfig:"BAZ"`
+		Struct *setterStruct `envconfig:"STRUCT"`
 	}
 
 	// Set would panic when the receiver is nil,
@@ -692,8 +669,10 @@ func TestNestedStructVarName(t *testing.T) {
 	var s Specification
 	os.Clearenv()
 	os.Setenv("ENV_CONFIG_REQUIREDVAR", "required")
-	val := "found with only short name"
-	os.Setenv("INNER", val)
+	// The behaviour of this test has changed, as we explicitly expect the prefix
+	// to be used consistently, we no longer check for the INNER without the prefix.
+	val := "found only with prefixed name"
+	os.Setenv("ENV_CONFIG_OUTER_INNER", val)
 	if err := Process("env_config", &s); err != nil {
 		t.Error(err.Error())
 	}
@@ -806,6 +785,76 @@ func TestErrorMessageForRequiredAltVar(t *testing.T) {
 
 	if !strings.Contains(err.Error(), " BAR ") {
 		t.Errorf("expected error message to contain BAR, got \"%v\"", err)
+	}
+}
+
+func TestNonTaggedFields(t *testing.T) {
+	var s struct {
+		Foo string `envconfig:"FOO"`
+		Bar string `default:"can you hear me?"`
+		Baz string `required:"true"`
+	}
+
+	os.Clearenv()
+	os.Setenv("FOO", "foo")
+	os.Setenv("BAR", "bar")
+	os.Setenv("BAZ", "baz")
+
+	err := Process("", &s)
+	if err != nil {
+		t.Errorf("expected no error, got %s", err)
+	}
+	if s.Foo != "foo" {
+		t.Errorf("expected %s, got %s", "foo", s.Foo)
+	}
+	if s.Bar != "" {
+		t.Errorf("expected %s, got %s", "", s.Bar)
+	}
+	if s.Baz != "" {
+		t.Errorf("expected %s, got %s", "", s.Baz)
+	}
+}
+
+func TestNestedStructs(t *testing.T) {
+	var s struct {
+		Anonymous struct {
+			Foo string `envconfig:"FOO"`
+			Bar string
+		}
+		Named struct {
+			Foz string `envconfig:"FOZ"`
+			Baz string
+		} `envconfig:"NAMED"`
+		NamedButSkipped struct {
+			Hello string `envconfig:"HELLO"`
+		} `envconfig:"SKIPPED"`
+	}
+
+	os.Clearenv()
+	os.Setenv("FOO", "foo")
+	os.Setenv("BAR", "bar")
+	os.Setenv("NAMED_FOZ", "foz")
+	os.Setenv("NAMED_BAZ", "baz")
+	os.Setenv("HELLO", "hello")
+
+	err := Process("", &s)
+	if err != nil {
+		t.Errorf("expected no error, got %s", err)
+	}
+	if s.Anonymous.Foo != "foo" {
+		t.Errorf("expected %s, got %s", "foo", s.Anonymous.Foo)
+	}
+	if s.Anonymous.Bar != "" {
+		t.Errorf("expected %s, got %s", "", s.Anonymous.Bar)
+	}
+	if s.Named.Foz != "foz" {
+		t.Errorf("expected %s, got %s", "", s.Named.Foz)
+	}
+	if s.Named.Baz != "" {
+		t.Errorf("expected %s, got %s", "", s.Named.Baz)
+	}
+	if s.NamedButSkipped.Hello != "" {
+		t.Errorf("expected %s, got %s", "", s.NamedButSkipped.Hello)
 	}
 }
 
