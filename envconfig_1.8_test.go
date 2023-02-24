@@ -1,3 +1,4 @@
+//go:build go1.8
 // +build go1.8
 
 package envconfig
@@ -10,8 +11,8 @@ import (
 )
 
 type SpecWithURL struct {
-	UrlValue   url.URL
-	UrlPointer *url.URL
+	UrlValue   url.URL  `envconfig:"URLVALUE"`
+	UrlPointer *url.URL `envconfig:"URLPOINTER"`
 }
 
 func TestParseURL(t *testing.T) {

@@ -1,14 +1,22 @@
 # envconfig
 
-[![Build Status](https://travis-ci.org/kelseyhightower/envconfig.svg)](https://travis-ci.org/kelseyhightower/envconfig)
+The reMarkable fork of Kelsey Hightowers [envconfig](https://github.com/kelseyhightower/envconfig)
+library. There are a few differences in this fork, compared to the original:
+
+1. Untagged fields are always ignored, i.e. you must always add the struct tag
+   `envconfig:` for this package to do anything. It does however look into
+   untagged nested structs as usual.
+2. It does not inherit the name of untagged nested struct fields.
+3. It does not attempt to look for unprefixed versions of names when the prefixed
+   environment variable is missing.
 
 ```Go
-import "github.com/kelseyhightower/envconfig"
+import "github.com/reMarkable/envconfig"
 ```
 
 ## Documentation
 
-See [godoc](http://godoc.org/github.com/kelseyhightower/envconfig)
+See [godoc](http://godoc.org/github.com/reMarkable/envconfig)
 
 ## Usage
 
@@ -34,7 +42,7 @@ import (
     "log"
     "time"
 
-    "github.com/kelseyhightower/envconfig"
+    "github.com/reMarkable/envconfig"
 )
 
 type Specification struct {

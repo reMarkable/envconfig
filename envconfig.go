@@ -99,33 +99,21 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 			Alt:   strings.ToUpper(ftype.Tag.Get("envconfig")),
 		}
 
-		// Default to the field name as the env var name (will be upcased)
-		info.Key = info.Name
-
-		// Best effort to un-pick camel casing as separate words
-		if isTrue(ftype.Tag.Get("split_words")) {
-			words := gatherRegexp.FindAllStringSubmatch(ftype.Name, -1)
-			if len(words) > 0 {
-				var name []string
-				for _, words := range words {
-					if m := acronymRegexp.FindStringSubmatch(words[0]); len(m) == 3 {
-						name = append(name, m[1], m[2])
-					} else {
-						name = append(name, words[0])
-					}
-				}
-
-				info.Key = strings.Join(name, "_")
-			}
+		// The reMarkable version of this package behaves slightly different than
+		// the original one. Instead of trying to figure out the default name based
+		// on the field name, we *only* care about fields that *explicitly* define
+		// the `envconfig` tag with the name. All other fields will be ignored,
+		// but we will traverse into nested structs like normal (tag or no tag).
+		//
+		// We also do not attempt to locate non-prefixed versions of variables, if
+		// the prefixed one is not found.
+		info.Key = info.Alt
+		if prefix != "" && info.Key != "" {
+			info.Key = fmt.Sprintf("%s_%s", strings.ToUpper(prefix), info.Key)
 		}
-		if info.Alt != "" {
-			info.Key = info.Alt
+		if info.Key != "" {
+			infos = append(infos, info)
 		}
-		if prefix != "" {
-			info.Key = fmt.Sprintf("%s_%s", prefix, info.Key)
-		}
-		info.Key = strings.ToUpper(info.Key)
-		infos = append(infos, info)
 
 		if f.Kind() == reflect.Struct {
 			// honor Decode if present
@@ -140,7 +128,12 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 				if err != nil {
 					return nil, err
 				}
-				infos = append(infos[:len(infos)-1], embeddedInfos...)
+				// Since we do not append an info unless the key is explicitly specified,
+				// we shouldn't pop it here either, since there is nothing to replace.
+				if info.Key != "" {
+					infos = infos[:len(infos)-1]
+				}
+				infos = append(infos, embeddedInfos...)
 
 				continue
 			}
@@ -191,9 +184,6 @@ func Process(prefix string, spec interface{}) error {
 		// but it is only available in go1.5 or newer. We're using Go build tags
 		// here to use os.LookupEnv for >=go1.5
 		value, ok := lookupEnv(info.Key)
-		if !ok && info.Alt != "" {
-			value, ok = lookupEnv(info.Alt)
-		}
 
 		def := info.Tags.Get("default")
 		if def != "" && !ok {
