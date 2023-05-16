@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/reMarkable/envconfig/types"
 )
 
 type HonorDecodeInStruct struct {
@@ -61,12 +63,13 @@ type Specification struct {
 		Property            string `envconfig:"inner"`
 		PropertyWithDefault string `envconfig:"PROPERTYWITHDEFAULT" default:"fuzzybydefault"`
 	} `envconfig:"outer"`
-	AfterNested  string              `envconfig:"AFTERNESTED"`
-	DecodeStruct HonorDecodeInStruct `envconfig:"honor"`
-	Datetime     time.Time           `envconfig:"DATETIME"`
-	MapField     map[string]string   `envconfig:"MAPFIELD" default:"one:two,three:four"`
-	UrlValue     CustomURL           `envconfig:"URLVALUE"`
-	UrlPointer   *CustomURL          `envconfig:"URLPOINTER"`
+	AfterNested       string                  `envconfig:"AFTERNESTED"`
+	DecodeStruct      HonorDecodeInStruct     `envconfig:"honor"`
+	Datetime          time.Time               `envconfig:"DATETIME"`
+	MapField          map[string]string       `envconfig:"MAPFIELD" default:"one:two,three:four"`
+	UrlValue          CustomURL               `envconfig:"URLVALUE"`
+	UrlPointer        *CustomURL              `envconfig:"URLPOINTER"`
+	GooglePubSubTopic types.GooglePubSubTopic `envconfig:"GOOGLE_PUBSUB_TOPIC"`
 }
 
 type Embedded struct {
@@ -108,6 +111,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_MULTI_WORD_ACR_WITH_AUTO_SPLIT", "25")
 	os.Setenv("ENV_CONFIG_URLVALUE", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_URLPOINTER", "https://github.com/kelseyhightower/envconfig")
+	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "projects/project-id/topics/topic-id")
 	err := Process("env_config", &s)
 	if err != nil {
 		t.Error(err.Error())
@@ -209,6 +213,14 @@ func TestProcess(t *testing.T) {
 	if *s.UrlPointer.Value != *u {
 		t.Errorf("expected %q, got %q", u, s.UrlPointer.Value.String())
 	}
+
+	if s.GooglePubSubTopic.ProjectID != "project-id" {
+		t.Errorf("expected %s, got %s", "project-id", s.GooglePubSubTopic.ProjectID)
+	}
+
+	if s.GooglePubSubTopic.TopicID != "topic-id" {
+		t.Errorf("expected %s, got %s", "topic-id", s.GooglePubSubTopic.TopicID)
+	}
 }
 
 func TestParseErrorBool(t *testing.T) {
@@ -279,6 +291,34 @@ func TestParseErrorUint(t *testing.T) {
 	}
 	if s.TTL != 0 {
 		t.Errorf("expected %v, got %v", 0, s.TTL)
+	}
+}
+
+func TestParseErrorGooglePubSubTopic(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "invalid/project-id/topics")
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "foo")
+	err := Process("env_config", &s)
+	v, ok := err.(*ParseError)
+	if !ok {
+		t.Errorf("expected ParseError, got %v", v)
+	}
+
+	if v.FieldName != "GooglePubSubTopic" {
+		t.Errorf("expected %s, got %v", "GooglePubSubTopic", v.FieldName)
+	}
+
+	if s.GooglePubSubTopic.TopicID != "" {
+		t.Errorf("expected %s, got %s", "", s.GooglePubSubTopic.TopicID)
+	}
+
+	if s.GooglePubSubTopic.ProjectID != "" {
+		t.Errorf("expected %s, got %s", "", s.GooglePubSubTopic.ProjectID)
+	}
+
+	if v.Err != types.ErrInvalidGoogleTopicID {
+		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleTopicID, v.Err)
 	}
 }
 
