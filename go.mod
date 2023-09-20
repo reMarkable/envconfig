@@ -1,1 +1,1 @@
-module github.com/reMarkable/envconfig
+module github.com/reMarkable/envconfig/v2

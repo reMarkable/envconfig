@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/reMarkable/envconfig/types"
+	"github.com/reMarkable/envconfig/v2/types"
 )
 
 type HonorDecodeInStruct struct {

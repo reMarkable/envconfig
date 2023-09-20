@@ -18,7 +18,7 @@ library. There are a few differences in this fork, compared to the original:
    for this is this enables us to use maps containing slices.
 
 ```Go
-import "github.com/reMarkable/envconfig"
+import "github.com/reMarkable/envconfig/v2"
 ```
 
 ## Documentation
@@ -49,7 +49,7 @@ import (
     "log"
     "time"
 
-    "github.com/reMarkable/envconfig"
+    "github.com/reMarkable/envconfig/v2"
 )
 
 type Specification struct {
