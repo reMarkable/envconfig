@@ -78,7 +78,7 @@ ENV_CONFIG_BYTESLICE
 ..[required]....
 ENV_CONFIG_COLORCODES
 ..[description].
-..[type]........Comma-separated.list.of.String:Integer.pairs
+..[type]........Semicolon-separated.list.of.String:Integer.pairs
 ..[default].....
 ..[required]....
 ENV_CONFIG_SOMEPOINTER
@@ -153,12 +153,12 @@ ENV_CONFIG_DATETIME
 ..[required]....
 ENV_CONFIG_MAPFIELD
 ..[description].
-..[type]........Comma-separated.list.of.String:String.pairs
-..[default].....one:two,three:four
+..[type]........Semicolon-separated.list.of.String:String.pairs
+..[default].....one:two;three:four
 ..[required]....
 ENV_CONFIG_EMPTY_MAPFIELD
 ..[description].
-..[type]........Comma-separated.list.of.String:String.pairs
+..[type]........Semicolon-separated.list.of.String:String.pairs
 ..[default].....
 ..[required]....
 ENV_CONFIG_URLVALUE

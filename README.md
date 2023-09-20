@@ -14,6 +14,8 @@ library. There are a few differences in this fork, compared to the original:
    value (not just the presence of the variable). This also means that default
    values will override empty environment variables.
 5. Byte slices expects environment variable values to be Base64 encoded.
+6. Values for map types are semicolon-separated, not comma-separated. The rationale
+   for this is this enables us to use maps containing slices.
 
 ```Go
 import "github.com/reMarkable/envconfig"

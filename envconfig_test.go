@@ -67,7 +67,7 @@ type Specification struct {
 	AfterNested       string                  `envconfig:"AFTERNESTED"`
 	DecodeStruct      HonorDecodeInStruct     `envconfig:"honor"`
 	Datetime          time.Time               `envconfig:"DATETIME"`
-	MapField          map[string]string       `envconfig:"MAPFIELD" default:"one:two,three:four"`
+	MapField          map[string]string       `envconfig:"MAPFIELD" default:"one:two;three:four"`
 	EmptyMapField     map[string]string       `envconfig:"EMPTY_MAPFIELD"`
 	UrlValue          CustomURL               `envconfig:"URLVALUE"`
 	UrlPointer        *CustomURL              `envconfig:"URLPOINTER"`
@@ -100,7 +100,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_MAGICNUMBERS", "5,10,20")
 	os.Setenv("ENV_CONFIG_EMPTYNUMBERS", "")
 	os.Setenv("ENV_CONFIG_BYTESLICE", "dGhpcyBpcyBhIHRlc3QgdmFsdWU=")
-	os.Setenv("ENV_CONFIG_COLORCODES", "red:1,green:2,blue:3")
+	os.Setenv("ENV_CONFIG_COLORCODES", "red:1;green:2;blue:3")
 	os.Setenv("SERVICE_HOST", "127.0.0.1")
 	os.Setenv("ENV_CONFIG_TTL", "30")
 	os.Setenv("ENV_CONFIG_REQUIREDVAR", "foo")

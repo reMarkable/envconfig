@@ -314,7 +314,7 @@ func processField(value string, field reflect.Value) error {
 	case reflect.Map:
 		mp := reflect.MakeMap(typ)
 		if strings.TrimSpace(value) != "" {
-			pairs := strings.Split(value, ",")
+			pairs := strings.Split(value, ";")
 			for _, pair := range pairs {
 				kvpair := strings.Split(pair, ":")
 				if len(kvpair) != 2 {

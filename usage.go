@@ -64,7 +64,7 @@ func toTypeDescription(t reflect.Type) string {
 		return fmt.Sprintf("Comma-separated list of %s", toTypeDescription(t.Elem()))
 	case reflect.Map:
 		return fmt.Sprintf(
-			"Comma-separated list of %s:%s pairs",
+			"Semicolon-separated list of %s:%s pairs",
 			toTypeDescription(t.Key()),
 			toTypeDescription(t.Elem()),
 		)
