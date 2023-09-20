@@ -6,6 +6,7 @@ package envconfig
 
 import (
 	"encoding"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -294,7 +295,11 @@ func processField(value string, field reflect.Value) error {
 	case reflect.Slice:
 		sl := reflect.MakeSlice(typ, 0, 0)
 		if typ.Elem().Kind() == reflect.Uint8 {
-			sl = reflect.ValueOf([]byte(value))
+			b, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				return fmt.Errorf("unable to base64 decode string value: %w", err)
+			}
+			sl = reflect.ValueOf(b)
 		} else if strings.TrimSpace(value) != "" {
 			vals := strings.Split(value, ",")
 			sl = reflect.MakeSlice(typ, len(vals), len(vals))

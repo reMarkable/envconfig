@@ -13,6 +13,7 @@ library. There are a few differences in this fork, compared to the original:
    that missing variables. That means that required fields, always require a
    value (not just the presence of the variable). This also means that default
    values will override empty environment variables.
+5. Byte slices expects environment variable values to be Base64 encoded.
 
 ```Go
 import "github.com/reMarkable/envconfig"
