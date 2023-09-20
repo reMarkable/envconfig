@@ -179,19 +179,19 @@ func Process(prefix string, spec interface{}) error {
 
 	for _, info := range infos {
 
-		// `os.Getenv` cannot differentiate between an explicitly set empty value
-		// and an unset value. `os.LookupEnv` is preferred to `syscall.Getenv`,
-		// but it is only available in go1.5 or newer. We're using Go build tags
-		// here to use os.LookupEnv for >=go1.5
-		value, ok := lookupEnv(info.Key)
+		// Get the value from the environment variable. In the reMarkable fork,
+		// we do not differentiate between explicitly set empty values, and
+		// values missing altogether. If a value is required, and it is empty,
+		// that is considered an error.
+		value := os.Getenv(info.Key)
 
 		def := info.Tags.Get("default")
-		if def != "" && !ok {
+		if def != "" && value == "" {
 			value = def
 		}
 
 		req := info.Tags.Get("required")
-		if !ok && def == "" {
+		if value == "" {
 			if isTrue(req) {
 				key := info.Key
 				if info.Alt != "" {

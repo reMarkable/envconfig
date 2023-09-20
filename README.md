@@ -9,6 +9,10 @@ library. There are a few differences in this fork, compared to the original:
 2. It does not inherit the name of untagged nested struct fields.
 3. It does not attempt to look for unprefixed versions of names when the prefixed
    environment variable is missing.
+4. Environment variables explicitly set blank are not handled any differently
+   that missing variables. That means that required fields, always require a
+   value (not just the presence of the variable). This also means that default
+   values will override empty environment variables.
 
 ```Go
 import "github.com/reMarkable/envconfig"

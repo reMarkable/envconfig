@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -67,6 +68,7 @@ type Specification struct {
 	DecodeStruct      HonorDecodeInStruct     `envconfig:"honor"`
 	Datetime          time.Time               `envconfig:"DATETIME"`
 	MapField          map[string]string       `envconfig:"MAPFIELD" default:"one:two,three:four"`
+	EmptyMapField     map[string]string       `envconfig:"EMPTY_MAPFIELD"`
 	UrlValue          CustomURL               `envconfig:"URLVALUE"`
 	UrlPointer        *CustomURL              `envconfig:"URLPOINTER"`
 	GooglePubSubTopic types.GooglePubSubTopic `envconfig:"GOOGLE_PUBSUB_TOPIC"`
@@ -435,12 +437,12 @@ func TestExplicitBlankDefaultVar(t *testing.T) {
 	os.Setenv("ENV_CONFIG_DEFAULTVAR", "")
 	os.Setenv("ENV_CONFIG_REQUIREDVAR", "")
 
-	if err := Process("env_config", &s); err != nil {
-		t.Error(err.Error())
+	if err := Process("env_config", &s); err == nil {
+		t.Error("no failure when missing required variable")
 	}
 
-	if s.DefaultVar != "" {
-		t.Errorf("expected %s, got %s", "\"\"", s.DefaultVar)
+	if s.DefaultVar != "foobar" {
+		t.Errorf("expected %s, got %s", "foobar", s.DefaultVar)
 	}
 }
 
@@ -501,16 +503,25 @@ func TestEmptyMapFieldOverride(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("ENV_CONFIG_REQUIREDVAR", "foo")
 	os.Setenv("ENV_CONFIG_MAPFIELD", "")
+	os.Setenv("ENV_CONFIG_EMPTY_MAPFIELD", "")
 	if err := Process("env_config", &s); err != nil {
 		t.Error(err.Error())
 	}
 
 	if s.MapField == nil {
-		t.Error("expected empty map, got <nil>")
+		t.Error("expected map, got <nil>")
 	}
 
-	if len(s.MapField) != 0 {
-		t.Errorf("expected empty map, got map of size %d", len(s.MapField))
+	expMap := map[string]string{
+		"one":   "two",
+		"three": "four",
+	}
+	if !reflect.DeepEqual(s.MapField, expMap) {
+		t.Errorf("expected map %+v, got map %+v", expMap, s.MapField)
+	}
+
+	if s.EmptyMapField != nil {
+		t.Errorf("expected nil map, but got %+v", s.EmptyMapField)
 	}
 }
 

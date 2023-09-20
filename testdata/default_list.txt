@@ -156,6 +156,11 @@ ENV_CONFIG_MAPFIELD
 ..[type]........Comma-separated.list.of.String:String.pairs
 ..[default].....one:two,three:four
 ..[required]....
+ENV_CONFIG_EMPTY_MAPFIELD
+..[description].
+..[type]........Comma-separated.list.of.String:String.pairs
+..[default].....
+..[required]....
 ENV_CONFIG_URLVALUE
 ..[description].
 ..[type]........CustomURL
