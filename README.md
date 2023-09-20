@@ -9,9 +9,16 @@ library. There are a few differences in this fork, compared to the original:
 2. It does not inherit the name of untagged nested struct fields.
 3. It does not attempt to look for unprefixed versions of names when the prefixed
    environment variable is missing.
+4. Environment variables explicitly set blank are not handled any differently
+   that missing variables. That means that required fields, always require a
+   value (not just the presence of the variable). This also means that default
+   values will override empty environment variables.
+5. Byte slices expects environment variable values to be Base64 encoded.
+6. Values for map types are semicolon-separated, not comma-separated. The rationale
+   for this is this enables us to use maps containing slices.
 
 ```Go
-import "github.com/reMarkable/envconfig"
+import "github.com/reMarkable/envconfig/v2"
 ```
 
 ## Documentation
@@ -42,7 +49,7 @@ import (
     "log"
     "time"
 
-    "github.com/reMarkable/envconfig"
+    "github.com/reMarkable/envconfig/v2"
 )
 
 type Specification struct {

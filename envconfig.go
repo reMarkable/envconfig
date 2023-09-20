@@ -6,6 +6,7 @@ package envconfig
 
 import (
 	"encoding"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -179,19 +180,19 @@ func Process(prefix string, spec interface{}) error {
 
 	for _, info := range infos {
 
-		// `os.Getenv` cannot differentiate between an explicitly set empty value
-		// and an unset value. `os.LookupEnv` is preferred to `syscall.Getenv`,
-		// but it is only available in go1.5 or newer. We're using Go build tags
-		// here to use os.LookupEnv for >=go1.5
-		value, ok := lookupEnv(info.Key)
+		// Get the value from the environment variable. In the reMarkable fork,
+		// we do not differentiate between explicitly set empty values, and
+		// values missing altogether. If a value is required, and it is empty,
+		// that is considered an error.
+		value := os.Getenv(info.Key)
 
 		def := info.Tags.Get("default")
-		if def != "" && !ok {
+		if def != "" && value == "" {
 			value = def
 		}
 
 		req := info.Tags.Get("required")
-		if !ok && def == "" {
+		if value == "" {
 			if isTrue(req) {
 				key := info.Key
 				if info.Alt != "" {
@@ -294,7 +295,11 @@ func processField(value string, field reflect.Value) error {
 	case reflect.Slice:
 		sl := reflect.MakeSlice(typ, 0, 0)
 		if typ.Elem().Kind() == reflect.Uint8 {
-			sl = reflect.ValueOf([]byte(value))
+			b, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				return fmt.Errorf("unable to base64 decode string value: %w", err)
+			}
+			sl = reflect.ValueOf(b)
 		} else if strings.TrimSpace(value) != "" {
 			vals := strings.Split(value, ",")
 			sl = reflect.MakeSlice(typ, len(vals), len(vals))
@@ -309,7 +314,7 @@ func processField(value string, field reflect.Value) error {
 	case reflect.Map:
 		mp := reflect.MakeMap(typ)
 		if strings.TrimSpace(value) != "" {
-			pairs := strings.Split(value, ",")
+			pairs := strings.Split(value, ";")
 			for _, pair := range pairs {
 				kvpair := strings.Split(pair, ":")
 				if len(kvpair) != 2 {
