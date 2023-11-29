@@ -7,6 +7,7 @@ package envconfig
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"reflect"
@@ -74,6 +75,7 @@ type Specification struct {
 	GooglePubSubTopic              types.GooglePubSubTopic       `envconfig:"GOOGLE_PUBSUB_TOPIC"`
 	GoogleFirestoreDatabase        types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE"`
 	GoogleFirestoreDatabaseDefault types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE_DEFAULT"`
+	LogLevel                       types.SlogLevel               `envconfig:"LOG_LEVEL" default:"INFO"`
 }
 
 type Embedded struct {
@@ -118,6 +120,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "projects/project-id/topics/topic-id")
 	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE", "projects/project-id/databases/db")
 	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE_DEFAULT", "projects/project-id/databases/(default)")
+	os.Setenv("ENV_CONFIG_LOG_LEVEL", "debug")
 	err := Process("env_config", &s)
 	if err != nil {
 		t.Error(err.Error())
@@ -242,6 +245,10 @@ func TestProcess(t *testing.T) {
 
 	if s.GoogleFirestoreDatabaseDefault.Database != "(default)" {
 		t.Errorf("expected %s, got %s", "default", s.GoogleFirestoreDatabaseDefault.Database)
+	}
+
+	if s.LogLevel.Value != slog.LevelDebug {
+		t.Errorf("expected %s, got %s", slog.LevelDebug, s.LogLevel.Value)
 	}
 }
 
@@ -369,6 +376,33 @@ func TestParseErrorGoogleFirestoreDatabase(t *testing.T) {
 
 	if v.Err != types.ErrInvalidGoogleFirestoreID {
 		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleFirestoreID, v.Err)
+	}
+}
+
+func TestParseUnknownLogLevel(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "requiredvalue")
+	os.Setenv("ENV_CONFIG_LOG_LEVEL", "unknown")
+	if err := Process("env_config", &s); err != nil {
+		t.Error(err.Error())
+	}
+
+	if s.LogLevel.Value != slog.LevelInfo {
+		t.Errorf("expected %s, got %s", slog.LevelInfo, s.LogLevel.Value)
+	}
+}
+
+func TestBlankLogLevel(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "requiredvalue")
+	if err := Process("env_config", &s); err != nil {
+		t.Error(err.Error())
+	}
+
+	if s.LogLevel.Value != slog.LevelInfo {
+		t.Errorf("expected %s, got %s", slog.LevelInfo, s.LogLevel.Value)
 	}
 }
 
