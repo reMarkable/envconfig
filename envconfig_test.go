@@ -7,6 +7,7 @@ package envconfig
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"reflect"
@@ -72,6 +73,7 @@ type Specification struct {
 	UrlValue          CustomURL               `envconfig:"URLVALUE"`
 	UrlPointer        *CustomURL              `envconfig:"URLPOINTER"`
 	GooglePubSubTopic types.GooglePubSubTopic `envconfig:"GOOGLE_PUBSUB_TOPIC"`
+	LogLevel          types.LogLevel          `envconfig:"LOG_LEVEL" default:"INFO"`
 }
 
 type Embedded struct {
@@ -114,6 +116,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_URLVALUE", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_URLPOINTER", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "projects/project-id/topics/topic-id")
+	os.Setenv("ENV_CONFIG_LOG_LEVEL", "debug")
 	err := Process("env_config", &s)
 	if err != nil {
 		t.Error(err.Error())
@@ -223,6 +226,10 @@ func TestProcess(t *testing.T) {
 	if s.GooglePubSubTopic.TopicID != "topic-id" {
 		t.Errorf("expected %s, got %s", "topic-id", s.GooglePubSubTopic.TopicID)
 	}
+
+	if s.LogLevel.Value != slog.LevelDebug {
+		t.Errorf("expected %s, got %s", slog.LevelDebug, s.LogLevel.Value)
+	}
 }
 
 func TestParseErrorBool(t *testing.T) {
@@ -321,6 +328,33 @@ func TestParseErrorGooglePubSubTopic(t *testing.T) {
 
 	if v.Err != types.ErrInvalidGoogleTopicID {
 		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleTopicID, v.Err)
+	}
+}
+
+func TestParseUnknownLogLevel(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "requiredvalue")
+	os.Setenv("ENV_CONFIG_LOG_LEVEL", "unknown")
+	if err := Process("env_config", &s); err != nil {
+		t.Error(err.Error())
+	}
+
+	if s.LogLevel.Value != slog.LevelInfo {
+		t.Errorf("expected %s, got %s", slog.LevelInfo, s.LogLevel.Value)
+	}
+}
+
+func TestBlankLogLevel(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "requiredvalue")
+	if err := Process("env_config", &s); err != nil {
+		t.Error(err.Error())
+	}
+
+	if s.LogLevel.Value != slog.LevelInfo {
+		t.Errorf("expected %s, got %s", slog.LevelInfo, s.LogLevel.Value)
 	}
 }
 
