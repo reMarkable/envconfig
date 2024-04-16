@@ -594,7 +594,7 @@ func TestEmbeddedStruct(t *testing.T) {
 func TestDayDuration(t *testing.T) {
 	var s struct {
 		Days0  time.Duration `envconfig:"DAYS_0" default:"0d"`
-		Day1   time.Duration `envconfig:"DAYS_1" default:"1d"`
+		Days1  time.Duration `envconfig:"DAYS_1" default:"1d"`
 		Days10 time.Duration `envconfig:"DAYS_10" default:"10d"`
 	}
 
@@ -607,10 +607,10 @@ func TestDayDuration(t *testing.T) {
 	}
 
 	if s.Days10 != 10*24*time.Hour {
-		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Day1)
+		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Days1)
 	}
 
-	if s.Day1 != 1*24*time.Hour {
+	if s.Days1 != 1*24*time.Hour {
 		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Days10)
 	}
 }
