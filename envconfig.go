@@ -264,6 +264,12 @@ func processField(value string, field reflect.Value) error {
 		)
 		if field.Kind() == reflect.Int64 && typ.PkgPath() == "time" && typ.Name() == "Duration" {
 			var d time.Duration
+
+			// time.Parse does not support day durations, so we convert any day durations to an hours string
+			if newValue, changed := daysToHoursDurationStr(value); changed {
+				value = newValue
+			}
+
 			d, err = time.ParseDuration(value)
 			val = int64(d)
 		} else {
@@ -374,4 +380,19 @@ func binaryUnmarshaler(field reflect.Value) (b encoding.BinaryUnmarshaler) {
 func isTrue(s string) bool {
 	b, _ := strconv.ParseBool(s)
 	return b
+}
+
+// daysToHoursDurationStr attempts to convert a day duration string to an hours duration string
+//
+//	if it succeeds it returns the new string and indicates it was changed, otherwise it returns the original
+func daysToHoursDurationStr(s string) (string, bool) {
+	pattern := `^\d+d$`
+	matched, _ := regexp.MatchString(pattern, s)
+
+	if matched {
+		day, _ := strconv.Atoi(strings.TrimSuffix(s, "d"))
+		return fmt.Sprintf("%dh", day*24), true
+	}
+
+	return s, false
 }
