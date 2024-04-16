@@ -263,7 +263,19 @@ func processField(value string, field reflect.Value) error {
 			err error
 		)
 		if field.Kind() == reflect.Int64 && typ.PkgPath() == "time" && typ.Name() == "Duration" {
-			var d time.Duration
+			var (
+				d       time.Duration
+				daysInt int64
+			)
+
+			// check if the value is a "d" (day) duration
+			if strings.HasSuffix(value, "d") {
+				if daysInt, err = strconv.ParseInt(strings.TrimSuffix(value, "d"), 10, 64); err != nil {
+					return err
+				}
+				value = fmt.Sprintf("%dh", daysInt*24)
+			}
+
 			d, err = time.ParseDuration(value)
 			val = int64(d)
 		} else {

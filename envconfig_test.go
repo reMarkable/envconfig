@@ -591,6 +591,50 @@ func TestEmbeddedStruct(t *testing.T) {
 	}
 }
 
+func TestDayDuration(t *testing.T) {
+	var s struct {
+		Days0  time.Duration `envconfig:"DAYS_0" default:"0d"`
+		Days1  time.Duration `envconfig:"DAYS_1" default:"1d"`
+		Days10 time.Duration `envconfig:"DAYS_10" default:"10d"`
+	}
+
+	if err := Process("env_config", &s); err != nil {
+		t.Error(err.Error())
+	}
+
+	if s.Days0 != 0 {
+		t.Errorf("expected %d, got %s", 0, s.Days0)
+	}
+
+	if s.Days10 != 10*24*time.Hour {
+		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Days1)
+	}
+
+	if s.Days1 != 1*24*time.Hour {
+		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Days10)
+	}
+}
+
+func TestInvalidDayDuration(t *testing.T) {
+
+	badDays := []string{
+		"1dd",
+		"d",
+		" d",
+	}
+
+	for _, badDay := range badDays {
+		var s Specification
+		os.Clearenv()
+		os.Setenv("ENV_CONFIG_TIMEOUT", badDay)
+		err := Process("env_config", &s)
+
+		if err == nil {
+			t.Errorf("expected an err!")
+		}
+	}
+}
+
 func TestEmbeddedButIgnoredStruct(t *testing.T) {
 	var s Specification
 	os.Clearenv()
