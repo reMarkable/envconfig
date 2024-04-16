@@ -591,48 +591,47 @@ func TestEmbeddedStruct(t *testing.T) {
 	}
 }
 
-func TestIsDayDuration(t *testing.T) {
-	tests := []struct {
-		duration      string
-		expectConvert bool
-		hourString    string
-	}{
-		/* Return converted value, since they are day strings */
-		{"1d", true, "24h"},
-		{"10d", true, "240h"},
-		{"100d", true, "2400h"},
-		{"1000d", true, "24000h"},
-		{"30d", true, "720h"},
-
-		/* Return original value since they are not day strings */
-		{"1h", false, "1h"},
-		{"1m", false, "1m"},
-		{"d", false, "d"},
-		{"1", false, "1"},
-		{"1dd", false, "1dd"},
-	}
-
-	for _, d := range tests {
-		if newValue, ok := daysToHoursDurationStr(d.duration); ok != d.expectConvert {
-			t.Errorf("unexpected conversion result: %v", ok)
-		} else {
-			if newValue != d.hourString {
-				t.Errorf("expected %s, got %s", d.hourString, newValue)
-			}
-		}
-	}
-}
-func TestHourDuration(t *testing.T) {
+func TestDayDuration(t *testing.T) {
 	var s struct {
-		ADayString time.Duration `envconfig:"DAYS" default:"10d"`
+		Days0  time.Duration `envconfig:"DAYS_0" default:"0d"`
+		Day1   time.Duration `envconfig:"DAYS_1" default:"1d"`
+		Days10 time.Duration `envconfig:"DAYS_10" default:"10d"`
 	}
 
 	if err := Process("env_config", &s); err != nil {
 		t.Error(err.Error())
 	}
 
-	if s.ADayString != 10*24*time.Hour {
-		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.ADayString)
+	if s.Days0 != 0 {
+		t.Errorf("expected %d, got %s", 0, s.Days0)
+	}
+
+	if s.Days10 != 10*24*time.Hour {
+		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Day1)
+	}
+
+	if s.Day1 != 1*24*time.Hour {
+		t.Errorf("expected %s, got %s", 10*24*time.Hour, s.Days10)
+	}
+}
+
+func TestInvalidDayDuration(t *testing.T) {
+
+	badDays := []string{
+		"1dd",
+		"d",
+		" d",
+	}
+
+	for _, badDay := range badDays {
+		var s Specification
+		os.Clearenv()
+		os.Setenv("ENV_CONFIG_TIMEOUT", badDay)
+		err := Process("env_config", &s)
+
+		if err == nil {
+			t.Errorf("expected an err!")
+		}
 	}
 }
 
