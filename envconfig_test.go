@@ -64,14 +64,15 @@ type Specification struct {
 		Property            string `envconfig:"inner"`
 		PropertyWithDefault string `envconfig:"PROPERTYWITHDEFAULT" default:"fuzzybydefault"`
 	} `envconfig:"outer"`
-	AfterNested       string                  `envconfig:"AFTERNESTED"`
-	DecodeStruct      HonorDecodeInStruct     `envconfig:"honor"`
-	Datetime          time.Time               `envconfig:"DATETIME"`
-	MapField          map[string]string       `envconfig:"MAPFIELD" default:"one:two;three:four"`
-	EmptyMapField     map[string]string       `envconfig:"EMPTY_MAPFIELD"`
-	UrlValue          CustomURL               `envconfig:"URLVALUE"`
-	UrlPointer        *CustomURL              `envconfig:"URLPOINTER"`
-	GooglePubSubTopic types.GooglePubSubTopic `envconfig:"GOOGLE_PUBSUB_TOPIC"`
+	AfterNested             string                        `envconfig:"AFTERNESTED"`
+	DecodeStruct            HonorDecodeInStruct           `envconfig:"honor"`
+	Datetime                time.Time                     `envconfig:"DATETIME"`
+	MapField                map[string]string             `envconfig:"MAPFIELD" default:"one:two;three:four"`
+	EmptyMapField           map[string]string             `envconfig:"EMPTY_MAPFIELD"`
+	UrlValue                CustomURL                     `envconfig:"URLVALUE"`
+	UrlPointer              *CustomURL                    `envconfig:"URLPOINTER"`
+	GooglePubSubTopic       types.GooglePubSubTopic       `envconfig:"GOOGLE_PUBSUB_TOPIC"`
+	GoogleFirestoreDatabase types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE"`
 }
 
 type Embedded struct {
@@ -114,6 +115,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_URLVALUE", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_URLPOINTER", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "projects/project-id/topics/topic-id")
+	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE", "projects/project-id/databases/db")
 	err := Process("env_config", &s)
 	if err != nil {
 		t.Error(err.Error())
@@ -223,6 +225,14 @@ func TestProcess(t *testing.T) {
 	if s.GooglePubSubTopic.TopicID != "topic-id" {
 		t.Errorf("expected %s, got %s", "topic-id", s.GooglePubSubTopic.TopicID)
 	}
+
+	if s.GoogleFirestoreDatabase.ProjectID != "project-id" {
+		t.Errorf("expected %s, got %s", "project-id", s.GoogleFirestoreDatabase.ProjectID)
+	}
+
+	if s.GoogleFirestoreDatabase.Database != "db" {
+		t.Errorf("expected %s, got %s", "db", s.GoogleFirestoreDatabase.Database)
+	}
 }
 
 func TestParseErrorBool(t *testing.T) {
@@ -321,6 +331,34 @@ func TestParseErrorGooglePubSubTopic(t *testing.T) {
 
 	if v.Err != types.ErrInvalidGoogleTopicID {
 		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleTopicID, v.Err)
+	}
+}
+
+func TestParseErrorGoogleFirestoreDatabase(t *testing.T) {
+	var s Specification
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE", "invalid/project-id/databases")
+	os.Setenv("ENV_CONFIG_REQUIREDVAR", "foo")
+	err := Process("env_config", &s)
+	v, ok := err.(*ParseError)
+	if !ok {
+		t.Errorf("expected ParseError, got %v", v)
+	}
+
+	if v.FieldName != "GoogleFirestoreDatabase" {
+		t.Errorf("expected %s, got %v", "GoogleFirestoreDatabase", v.FieldName)
+	}
+
+	if s.GoogleFirestoreDatabase.Database != "" {
+		t.Errorf("expected %s, got %s", "", s.GoogleFirestoreDatabase.Database)
+	}
+
+	if s.GoogleFirestoreDatabase.ProjectID != "" {
+		t.Errorf("expected %s, got %s", "", s.GoogleFirestoreDatabase.ProjectID)
+	}
+
+	if v.Err != types.ErrInvalidGoogleFirestoreID {
+		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleFirestoreID, v.Err)
 	}
 }
 
