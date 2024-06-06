@@ -64,15 +64,16 @@ type Specification struct {
 		Property            string `envconfig:"inner"`
 		PropertyWithDefault string `envconfig:"PROPERTYWITHDEFAULT" default:"fuzzybydefault"`
 	} `envconfig:"outer"`
-	AfterNested             string                        `envconfig:"AFTERNESTED"`
-	DecodeStruct            HonorDecodeInStruct           `envconfig:"honor"`
-	Datetime                time.Time                     `envconfig:"DATETIME"`
-	MapField                map[string]string             `envconfig:"MAPFIELD" default:"one:two;three:four"`
-	EmptyMapField           map[string]string             `envconfig:"EMPTY_MAPFIELD"`
-	UrlValue                CustomURL                     `envconfig:"URLVALUE"`
-	UrlPointer              *CustomURL                    `envconfig:"URLPOINTER"`
-	GooglePubSubTopic       types.GooglePubSubTopic       `envconfig:"GOOGLE_PUBSUB_TOPIC"`
-	GoogleFirestoreDatabase types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE"`
+	AfterNested                    string                        `envconfig:"AFTERNESTED"`
+	DecodeStruct                   HonorDecodeInStruct           `envconfig:"honor"`
+	Datetime                       time.Time                     `envconfig:"DATETIME"`
+	MapField                       map[string]string             `envconfig:"MAPFIELD" default:"one:two;three:four"`
+	EmptyMapField                  map[string]string             `envconfig:"EMPTY_MAPFIELD"`
+	UrlValue                       CustomURL                     `envconfig:"URLVALUE"`
+	UrlPointer                     *CustomURL                    `envconfig:"URLPOINTER"`
+	GooglePubSubTopic              types.GooglePubSubTopic       `envconfig:"GOOGLE_PUBSUB_TOPIC"`
+	GoogleFirestoreDatabase        types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE"`
+	GoogleFirestoreDatabaseDefault types.GoogleFirestoreDatabase `envconfig:"GOOGLE_FIRESTORE_DATABASE_DEFAULT"`
 }
 
 type Embedded struct {
@@ -116,6 +117,7 @@ func TestProcess(t *testing.T) {
 	os.Setenv("ENV_CONFIG_URLPOINTER", "https://github.com/kelseyhightower/envconfig")
 	os.Setenv("ENV_CONFIG_GOOGLE_PUBSUB_TOPIC", "projects/project-id/topics/topic-id")
 	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE", "projects/project-id/databases/db")
+	os.Setenv("ENV_CONFIG_GOOGLE_FIRESTORE_DATABASE_DEFAULT", "projects/project-id/databases/(default)")
 	err := Process("env_config", &s)
 	if err != nil {
 		t.Error(err.Error())
@@ -232,6 +234,14 @@ func TestProcess(t *testing.T) {
 
 	if s.GoogleFirestoreDatabase.Database != "db" {
 		t.Errorf("expected %s, got %s", "db", s.GoogleFirestoreDatabase.Database)
+	}
+
+	if s.GoogleFirestoreDatabaseDefault.ProjectID != "project-id" {
+		t.Errorf("expected %s, got %s", "project-id", s.GoogleFirestoreDatabaseDefault.ProjectID)
+	}
+
+	if s.GoogleFirestoreDatabaseDefault.Database != "(default)" {
+		t.Errorf("expected %s, got %s", "default", s.GoogleFirestoreDatabaseDefault.Database)
 	}
 }
 
