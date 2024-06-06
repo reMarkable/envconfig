@@ -41,7 +41,7 @@ var (
 	// ErrInvalidGoogleFirestoreID means the configured database id has the wrong format.
 	ErrInvalidGoogleFirestoreID = errors.New("firestore id is not valid format")
 
-	googleFirestoreRegexp = regexp.MustCompile(`projects\/([\w-]+)\/databases\/([\w-]+)`)
+	googleFirestoreRegexp = regexp.MustCompile(`projects\/([\w-]+)\/databases\/([\w-]+|\(default\))`)
 )
 
 type GoogleFirestoreDatabase struct {
