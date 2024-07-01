@@ -194,11 +194,7 @@ func Process(prefix string, spec interface{}) error {
 		req := info.Tags.Get("required")
 		if value == "" {
 			if isTrue(req) {
-				key := info.Key
-				if info.Alt != "" {
-					key = info.Alt
-				}
-				return fmt.Errorf("required key %s missing value", key)
+				return fmt.Errorf("required key %s missing value", info.Key)
 			}
 			continue
 		}
