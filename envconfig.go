@@ -146,7 +146,9 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 // CheckDisallowed checks that no environment variables with the prefix are set
 // that we don't know how or want to parse. This is likely only meaningful with
 // a non-empty prefix.
-func CheckDisallowed(prefix string, spec interface{}) error {
+func CheckDisallowed(prefix string, spec interface{}, options ...Option) error {
+	lc := defaultLibConfig(options...)
+
 	infos, err := gatherInfo(prefix, spec)
 	if err != nil {
 		return err
@@ -161,7 +163,7 @@ func CheckDisallowed(prefix string, spec interface{}) error {
 		prefix = strings.ToUpper(prefix) + "_"
 	}
 
-	for _, env := range os.Environ() {
+	for _, env := range lc.env.Environ() {
 		if !strings.HasPrefix(env, prefix) {
 			continue
 		}
@@ -174,8 +176,55 @@ func CheckDisallowed(prefix string, spec interface{}) error {
 	return nil
 }
 
+type (
+	Environment interface {
+		Getenv(key string) string
+		Environ() []string
+	}
+
+	libConfig struct {
+		env Environment
+	}
+
+	Option func(*libConfig)
+
+	defaultEnv struct{}
+)
+
+func (defaultEnv) Getenv(key string) string {
+	return os.Getenv(key)
+}
+
+func (defaultEnv) Environ() []string {
+	return os.Environ()
+}
+
+func WithEnvironment(env Environment) Option {
+	return func(lc *libConfig) {
+		lc.env = env
+	}
+}
+
+func defaultLibConfig(options ...Option) libConfig {
+	lc := libConfig{
+		env: defaultEnv{},
+	}
+
+	for _, option := range options {
+		option(&lc)
+	}
+
+	return lc
+}
+
 // Process populates the specified struct based on environment variables
-func Process(prefix string, spec interface{}) error {
+func Process(prefix string, spec interface{}, options ...Option) error {
+	lc := defaultLibConfig(options...)
+
+	for _, option := range options {
+		option(&lc)
+	}
+
 	infos, err := gatherInfo(prefix, spec)
 
 	for _, info := range infos {
@@ -184,7 +233,7 @@ func Process(prefix string, spec interface{}) error {
 		// we do not differentiate between explicitly set empty values, and
 		// values missing altogether. If a value is required, and it is empty,
 		// that is considered an error.
-		value := os.Getenv(info.Key)
+		value := lc.env.Getenv(info.Key)
 
 		def := info.Tags.Get("default")
 		if def != "" && value == "" {
