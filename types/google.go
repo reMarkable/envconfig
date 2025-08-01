@@ -17,6 +17,7 @@ var (
 )
 
 type GooglePubSubTopic struct {
+	ID        string // The raw ID passed
 	ProjectID string
 	TopicID   string
 }
@@ -27,6 +28,7 @@ func (pst *GooglePubSubTopic) Set(value string) error {
 		return ErrInvalidGoogleTopicID
 	}
 
+	pst.ID = value
 	pst.ProjectID = m[1]
 	pst.TopicID = m[2]
 
