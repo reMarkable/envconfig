@@ -220,6 +220,10 @@ func TestProcess(t *testing.T) {
 		t.Errorf("expected %q, got %q", u, s.UrlPointer.Value.String())
 	}
 
+	if s.GooglePubSubTopic.ID != "projects/project-id/topics/topic-id" {
+		t.Errorf("expected %s, got %s", "projects/project-id/topics/topic-id", s.GooglePubSubTopic.ID)
+	}
+
 	if s.GooglePubSubTopic.ProjectID != "project-id" {
 		t.Errorf("expected %s, got %s", "project-id", s.GooglePubSubTopic.ProjectID)
 	}
