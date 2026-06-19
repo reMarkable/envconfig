@@ -20,8 +20,10 @@ import (
 // ErrInvalidSpecification indicates that a specification is of the wrong type.
 var ErrInvalidSpecification = errors.New("specification must be a struct pointer")
 
-var gatherRegexp = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
-var acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+var (
+	gatherRegexp  = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
+	acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+)
 
 // A ParseError occurs when an environment variable cannot be converted to
 // the type required by a struct field during assignment.
@@ -51,11 +53,12 @@ func (e *ParseError) Error() string {
 
 // varInfo maintains information about the configuration variable
 type varInfo struct {
-	Name  string
-	Alt   string
-	Key   string
-	Field reflect.Value
-	Tags  reflect.StructTag
+	Name         string
+	Alt          string
+	Key          string
+	FallbackKeys []string
+	Field        reflect.Value
+	Tags         reflect.StructTag
 }
 
 // GatherInfo gathers information about the specified struct
@@ -93,11 +96,12 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 		}
 
 		// Capture information about the config variable
+		tagParts := strings.Split(strings.ToUpper(ftype.Tag.Get("envconfig")), ",")
 		info := varInfo{
 			Name:  ftype.Name,
 			Field: f,
 			Tags:  ftype.Tag,
-			Alt:   strings.ToUpper(ftype.Tag.Get("envconfig")),
+			Alt:   tagParts[0],
 		}
 
 		// The reMarkable version of this package behaves slightly different than
@@ -112,6 +116,21 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 		if prefix != "" && info.Key != "" {
 			info.Key = fmt.Sprintf("%s_%s", strings.ToUpper(prefix), info.Key)
 		}
+
+		// Build fallback keys from any additional comma-separated names.
+		for _, key := range tagParts[1:] {
+			key = strings.TrimSpace(key)
+			if key == "" {
+				continue
+			}
+
+			if prefix != "" {
+				key = fmt.Sprintf("%s_%s", strings.ToUpper(prefix), key)
+			}
+
+			info.FallbackKeys = append(info.FallbackKeys, key)
+		}
+
 		if info.Key != "" {
 			infos = append(infos, info)
 		}
@@ -155,6 +174,9 @@ func CheckDisallowed(prefix string, spec interface{}) error {
 	vars := make(map[string]struct{})
 	for _, info := range infos {
 		vars[info.Key] = struct{}{}
+		for _, fk := range info.FallbackKeys {
+			vars[fk] = struct{}{}
+		}
 	}
 
 	if prefix != "" {
@@ -184,7 +206,20 @@ func Process(prefix string, spec interface{}) error {
 		// we do not differentiate between explicitly set empty values, and
 		// values missing altogether. If a value is required, and it is empty,
 		// that is considered an error.
+		//
+		// When the primary key has no value, fall back to the additional keys
+		// specified in the envconfig tag (comma-separated), in order.
+		resolvedKey := info.Key
 		value := os.Getenv(info.Key)
+		if value == "" {
+			for _, fk := range info.FallbackKeys {
+				if v := os.Getenv(fk); v != "" {
+					resolvedKey = fk
+					value = v
+					break
+				}
+			}
+		}
 
 		def := info.Tags.Get("default")
 		if def != "" && value == "" {
@@ -202,7 +237,7 @@ func Process(prefix string, spec interface{}) error {
 		err = processField(value, info.Field)
 		if err != nil {
 			return &ParseError{
-				KeyName:   info.Key,
+				KeyName:   resolvedKey,
 				FieldName: info.Name,
 				TypeName:  info.Field.Type().String(),
 				Value:     value,

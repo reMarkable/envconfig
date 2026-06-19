@@ -166,6 +166,23 @@ type Specification struct {
 Envconfig won't process a field with the "ignored" tag set to "true", even if a corresponding
 environment variable is set.
 
+### Fallback environment variables
+
+The `envconfig` tag accepts a comma-separated list of environment variable
+names. The first name is the primary key; if it is absent or empty, each
+subsequent name is tried in order until a non-empty value is found. The
+configured prefix is applied to every name in the list.
+
+```Go
+type Specification struct {
+    // Checks MYAPP_USER first, then MYAPP_LEGACY_USER.
+    User string `envconfig:"USER,LEGACY_USER"`
+}
+```
+
+If no value is found in any of the names, the `default` tag and `required`
+behaviour apply as normal.
+
 ## Supported Struct Field Types
 
 envconfig supports these struct field types:
