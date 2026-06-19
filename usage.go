@@ -25,7 +25,8 @@ variables can be used:
   [description] {{usage_description .}}
   [type]        {{usage_type .}}
   [default]     {{usage_default .}}
-  [required]    {{usage_required .}}{{end}}
+  [required]    {{usage_required .}}{{if usage_fallback .}}
+  [fallback]    {{usage_fallback .}}{{end}}{{end}}
 `
 	// DefaultTableFormat constant to use to display usage in a tabular format
 	DefaultTableFormat = `This application is configured via the environment. The following environment
@@ -129,6 +130,7 @@ func Usagef(prefix string, spec interface{}, out io.Writer, format string) error
 		"usage_description": func(v varInfo) string { return v.Tags.Get("desc") },
 		"usage_type":        func(v varInfo) string { return toTypeDescription(v.Field.Type()) },
 		"usage_default":     func(v varInfo) string { return v.Tags.Get("default") },
+		"usage_fallback":    func(v varInfo) string { return strings.Join(v.FallbackKeys, ", ") },
 		"usage_required": func(v varInfo) (string, error) {
 			req := v.Tags.Get("required")
 			if req != "" {

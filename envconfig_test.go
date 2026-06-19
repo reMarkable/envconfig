@@ -43,6 +43,7 @@ type Specification struct {
 	Port                         int            `envconfig:"PORT"`
 	Rate                         float32        `envconfig:"RATE"`
 	User                         string         `envconfig:"USER"`
+	UserWithFallback             string         `envconfig:"NEW_USER,USER"`
 	TTL                          uint32         `envconfig:"TTL"`
 	Timeout                      time.Duration  `envconfig:"TIMEOUT"`
 	AdminUsers                   []string       `envconfig:"ADMINUSERS"`
@@ -141,13 +142,13 @@ func TestProcess(t *testing.T) {
 		t.Errorf("expected %d, got %v", 30, s.TTL)
 	}
 	if s.User != "Kelsey" {
-		t.Errorf("expected %s, got %s", "Kelsey", s.User)
+		t.Errorf("expected %q, got %q", "Kelsey", s.User)
 	}
 	if s.Timeout != 2*time.Minute {
-		t.Errorf("expected %s, got %s", 2*time.Minute, s.Timeout)
+		t.Errorf("expected %q, got %q", 2*time.Minute, s.Timeout)
 	}
 	if s.RequiredVar != "foo" {
-		t.Errorf("expected %s, got %s", "foo", s.RequiredVar)
+		t.Errorf("expected %q, got %q", "foo", s.RequiredVar)
 	}
 	if len(s.AdminUsers) != 3 ||
 		s.AdminUsers[0] != "John" ||
@@ -188,22 +189,22 @@ func TestProcess(t *testing.T) {
 	}
 
 	if s.NestedSpecification.Property != "iamnested" {
-		t.Errorf("expected '%s' string, got %#v", "iamnested", s.NestedSpecification.Property)
+		t.Errorf("expected %q string, got %#v", "iamnested", s.NestedSpecification.Property)
 	}
 
 	if s.NestedSpecification.PropertyWithDefault != "fuzzybydefault" {
-		t.Errorf("expected default '%s' string, got %#v", "fuzzybydefault", s.NestedSpecification.PropertyWithDefault)
+		t.Errorf("expected default %q string, got %#v", "fuzzybydefault", s.NestedSpecification.PropertyWithDefault)
 	}
 
 	if s.AfterNested != "after" {
-		t.Errorf("expected default '%s' string, got %#v", "after", s.AfterNested)
+		t.Errorf("expected default %q string, got %#v", "after", s.AfterNested)
 	}
 
 	if s.DecodeStruct.Value != "decoded" {
-		t.Errorf("expected default '%s' string, got %#v", "decoded", s.DecodeStruct.Value)
+		t.Errorf("expected default %q string, got %#v", "decoded", s.DecodeStruct.Value)
 	}
 
-	if expected := time.Date(2016, 8, 16, 18, 57, 05, 0, time.UTC); !s.Datetime.Equal(expected) {
+	if expected := time.Date(2016, 8, 16, 18, 57, 0o5, 0, time.UTC); !s.Datetime.Equal(expected) {
 		t.Errorf("expected %s, got %s", expected.Format(time.RFC3339), s.Datetime.Format(time.RFC3339))
 	}
 
@@ -221,31 +222,31 @@ func TestProcess(t *testing.T) {
 	}
 
 	if s.GooglePubSubTopic.ID != "projects/project-id/topics/topic-id" {
-		t.Errorf("expected %s, got %s", "projects/project-id/topics/topic-id", s.GooglePubSubTopic.ID)
+		t.Errorf("expected %q, got %q", "projects/project-id/topics/topic-id", s.GooglePubSubTopic.ID)
 	}
 
 	if s.GooglePubSubTopic.ProjectID != "project-id" {
-		t.Errorf("expected %s, got %s", "project-id", s.GooglePubSubTopic.ProjectID)
+		t.Errorf("expected %q, got %q", "project-id", s.GooglePubSubTopic.ProjectID)
 	}
 
 	if s.GooglePubSubTopic.TopicID != "topic-id" {
-		t.Errorf("expected %s, got %s", "topic-id", s.GooglePubSubTopic.TopicID)
+		t.Errorf("expected %q, got %q", "topic-id", s.GooglePubSubTopic.TopicID)
 	}
 
 	if s.GoogleFirestoreDatabase.ProjectID != "project-id" {
-		t.Errorf("expected %s, got %s", "project-id", s.GoogleFirestoreDatabase.ProjectID)
+		t.Errorf("expected %q, got %q", "project-id", s.GoogleFirestoreDatabase.ProjectID)
 	}
 
 	if s.GoogleFirestoreDatabase.Database != "db" {
-		t.Errorf("expected %s, got %s", "db", s.GoogleFirestoreDatabase.Database)
+		t.Errorf("expected %q, got %q", "db", s.GoogleFirestoreDatabase.Database)
 	}
 
 	if s.GoogleFirestoreDatabaseDefault.ProjectID != "project-id" {
-		t.Errorf("expected %s, got %s", "project-id", s.GoogleFirestoreDatabaseDefault.ProjectID)
+		t.Errorf("expected %q, got %q", "project-id", s.GoogleFirestoreDatabaseDefault.ProjectID)
 	}
 
 	if s.GoogleFirestoreDatabaseDefault.Database != "(default)" {
-		t.Errorf("expected %s, got %s", "default", s.GoogleFirestoreDatabaseDefault.Database)
+		t.Errorf("expected %q, got %q", "default", s.GoogleFirestoreDatabaseDefault.Database)
 	}
 }
 
@@ -260,7 +261,7 @@ func TestParseErrorBool(t *testing.T) {
 		t.Errorf("expected ParseError, got %v", v)
 	}
 	if v.FieldName != "Debug" {
-		t.Errorf("expected %s, got %v", "Debug", v.FieldName)
+		t.Errorf("expected %q, got %v", "Debug", v.FieldName)
 	}
 	if s.Debug != false {
 		t.Errorf("expected %v, got %v", false, s.Debug)
@@ -278,7 +279,7 @@ func TestParseErrorFloat32(t *testing.T) {
 		t.Errorf("expected ParseError, got %v", v)
 	}
 	if v.FieldName != "Rate" {
-		t.Errorf("expected %s, got %v", "Rate", v.FieldName)
+		t.Errorf("expected %q, got %v", "Rate", v.FieldName)
 	}
 	if s.Rate != 0 {
 		t.Errorf("expected %v, got %v", 0, s.Rate)
@@ -296,7 +297,7 @@ func TestParseErrorInt(t *testing.T) {
 		t.Errorf("expected ParseError, got %v", v)
 	}
 	if v.FieldName != "Port" {
-		t.Errorf("expected %s, got %v", "Port", v.FieldName)
+		t.Errorf("expected %q, got %v", "Port", v.FieldName)
 	}
 	if s.Port != 0 {
 		t.Errorf("expected %v, got %v", 0, s.Port)
@@ -313,7 +314,7 @@ func TestParseErrorUint(t *testing.T) {
 		t.Errorf("expected ParseError, got %v", v)
 	}
 	if v.FieldName != "TTL" {
-		t.Errorf("expected %s, got %v", "TTL", v.FieldName)
+		t.Errorf("expected %q, got %q", "TTL", v.FieldName)
 	}
 	if s.TTL != 0 {
 		t.Errorf("expected %v, got %v", 0, s.TTL)
@@ -332,19 +333,19 @@ func TestParseErrorGooglePubSubTopic(t *testing.T) {
 	}
 
 	if v.FieldName != "GooglePubSubTopic" {
-		t.Errorf("expected %s, got %v", "GooglePubSubTopic", v.FieldName)
+		t.Errorf("expected %q, got %q", "GooglePubSubTopic", v.FieldName)
 	}
 
 	if s.GooglePubSubTopic.TopicID != "" {
-		t.Errorf("expected %s, got %s", "", s.GooglePubSubTopic.TopicID)
+		t.Errorf("expected %q, got %q", "", s.GooglePubSubTopic.TopicID)
 	}
 
 	if s.GooglePubSubTopic.ProjectID != "" {
-		t.Errorf("expected %s, got %s", "", s.GooglePubSubTopic.ProjectID)
+		t.Errorf("expected %q, got %q", "", s.GooglePubSubTopic.ProjectID)
 	}
 
 	if v.Err != types.ErrInvalidGoogleTopicID {
-		t.Errorf("unexpected %s, got %s", types.ErrInvalidGoogleTopicID, v.Err)
+		t.Errorf("unexpected %q, got %q", types.ErrInvalidGoogleTopicID, v.Err)
 	}
 }
 
@@ -360,15 +361,15 @@ func TestParseErrorGoogleFirestoreDatabase(t *testing.T) {
 	}
 
 	if v.FieldName != "GoogleFirestoreDatabase" {
-		t.Errorf("expected %s, got %v", "GoogleFirestoreDatabase", v.FieldName)
+		t.Errorf("expected %q, got %q", "GoogleFirestoreDatabase", v.FieldName)
 	}
 
 	if s.GoogleFirestoreDatabase.Database != "" {
-		t.Errorf("expected %s, got %s", "", s.GoogleFirestoreDatabase.Database)
+		t.Errorf("expected %q, got %q", "", s.GoogleFirestoreDatabase.Database)
 	}
 
 	if s.GoogleFirestoreDatabase.ProjectID != "" {
-		t.Errorf("expected %s, got %s", "", s.GoogleFirestoreDatabase.ProjectID)
+		t.Errorf("expected %q, got %q", "", s.GoogleFirestoreDatabase.ProjectID)
 	}
 
 	if v.Err != types.ErrInvalidGoogleFirestoreID {
@@ -438,7 +439,7 @@ func TestRequiredVar(t *testing.T) {
 	}
 
 	if s.RequiredVar != "foobar" {
-		t.Errorf("expected %s, got %s", "foobar", s.RequiredVar)
+		t.Errorf("expected %q, got %q", "foobar", s.RequiredVar)
 	}
 }
 
@@ -461,11 +462,11 @@ func TestBlankDefaultVar(t *testing.T) {
 	}
 
 	if s.DefaultVar != "foobar" {
-		t.Errorf("expected %s, got %s", "foobar", s.DefaultVar)
+		t.Errorf("expected %q, got %q", "foobar", s.DefaultVar)
 	}
 
 	if *s.SomePointerWithDefault != "foo2baz" {
-		t.Errorf("expected %s, got %s", "foo2baz", *s.SomePointerWithDefault)
+		t.Errorf("expected %q, got %q", "foo2baz", *s.SomePointerWithDefault)
 	}
 }
 
@@ -479,7 +480,7 @@ func TestNonBlankDefaultVar(t *testing.T) {
 	}
 
 	if s.DefaultVar != "nondefaultval" {
-		t.Errorf("expected %s, got %s", "nondefaultval", s.DefaultVar)
+		t.Errorf("expected %q, got %q", "nondefaultval", s.DefaultVar)
 	}
 }
 
@@ -494,7 +495,7 @@ func TestExplicitBlankDefaultVar(t *testing.T) {
 	}
 
 	if s.DefaultVar != "foobar" {
-		t.Errorf("expected %s, got %s", "foobar", s.DefaultVar)
+		t.Errorf("expected %q, got %q", "foobar", s.DefaultVar)
 	}
 }
 
@@ -621,22 +622,22 @@ func TestEmbeddedStruct(t *testing.T) {
 		t.Errorf("expected %d, got %v", 1234, s.EmbeddedPort)
 	}
 	if s.MultiWordVar != "foo" {
-		t.Errorf("expected %s, got %s", "foo", s.MultiWordVar)
+		t.Errorf("expected %q, got %q", "foo", s.MultiWordVar)
 	}
 	if s.Embedded.MultiWordVar != "foo" {
-		t.Errorf("expected %s, got %s", "foo", s.Embedded.MultiWordVar)
+		t.Errorf("expected %q, got %q", "foo", s.Embedded.MultiWordVar)
 	}
 	if s.MultiWordVarWithAlt != "bar" {
-		t.Errorf("expected %s, got %s", "bar", s.MultiWordVarWithAlt)
+		t.Errorf("expected %q, got %q", "bar", s.MultiWordVarWithAlt)
 	}
 	if s.Embedded.MultiWordVarWithAlt != "baz" {
-		t.Errorf("expected %s, got %s", "baz", s.Embedded.MultiWordVarWithAlt)
+		t.Errorf("expected %q, got %q", "baz", s.Embedded.MultiWordVarWithAlt)
 	}
 	if s.EmbeddedAlt != "foobar" {
-		t.Errorf("expected %s, got %s", "foobar", s.EmbeddedAlt)
+		t.Errorf("expected %q, got %q", "foobar", s.EmbeddedAlt)
 	}
 	if *s.SomePointer != "foobaz" {
-		t.Errorf("expected %s, got %s", "foobaz", *s.SomePointer)
+		t.Errorf("expected %q, got %q", "foobaz", *s.SomePointer)
 	}
 	if s.EmbeddedIgnored != "" {
 		t.Errorf("expected empty string, got %#v", s.Ignored)
@@ -668,7 +669,6 @@ func TestDayDuration(t *testing.T) {
 }
 
 func TestInvalidDayDuration(t *testing.T) {
-
 	badDays := []string{
 		"1dd",
 		"d",
@@ -824,7 +824,7 @@ func TestNestedStructVarName(t *testing.T) {
 		t.Error(err.Error())
 	}
 	if s.NestedSpecification.Property != val {
-		t.Errorf("expected %s, got %s", val, s.NestedSpecification.Property)
+		t.Errorf("expected %q, got %q", val, s.NestedSpecification.Property)
 	}
 }
 
@@ -841,7 +841,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 		t.Errorf("expected ParseError, got %v", v)
 	}
 	if v.FieldName != "Datetime" {
-		t.Errorf("expected %s, got %v", "Datetime", v.FieldName)
+		t.Errorf("expected %q, got %q", "Datetime", v.FieldName)
 	}
 
 	expectedLowLevelError := time.ParseError{
@@ -852,7 +852,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 
 	if v.Err.Error() != expectedLowLevelError.Error() {
-		t.Errorf("expected %s, got %s", expectedLowLevelError, v.Err)
+		t.Errorf("expected %q, got %q", expectedLowLevelError, v.Err)
 	}
 }
 
@@ -869,7 +869,7 @@ func TestBinaryUnmarshalerError(t *testing.T) {
 		t.Fatalf("expected ParseError, got %T %v", err, err)
 	}
 	if v.FieldName != "UrlPointer" {
-		t.Errorf("expected %s, got %v", "UrlPointer", v.FieldName)
+		t.Errorf("expected %q, got %q", "UrlPointer", v.FieldName)
 	}
 
 	// To be compatible with go 1.5 and lower we should do a very basic check,
@@ -988,13 +988,13 @@ func TestNonTaggedFields(t *testing.T) {
 		t.Errorf("expected no error, got %s", err)
 	}
 	if s.Foo != "foo" {
-		t.Errorf("expected %s, got %s", "foo", s.Foo)
+		t.Errorf("expected %q, got %q", "foo", s.Foo)
 	}
 	if s.Bar != "" {
-		t.Errorf("expected %s, got %s", "", s.Bar)
+		t.Errorf("expected %q, got %q", "", s.Bar)
 	}
 	if s.Baz != "" {
-		t.Errorf("expected %s, got %s", "", s.Baz)
+		t.Errorf("expected %q, got %q", "", s.Baz)
 	}
 }
 
@@ -1025,19 +1025,123 @@ func TestNestedStructs(t *testing.T) {
 		t.Errorf("expected no error, got %s", err)
 	}
 	if s.Anonymous.Foo != "foo" {
-		t.Errorf("expected %s, got %s", "foo", s.Anonymous.Foo)
+		t.Errorf("expected %q, got %q", "foo", s.Anonymous.Foo)
 	}
 	if s.Anonymous.Bar != "" {
-		t.Errorf("expected %s, got %s", "", s.Anonymous.Bar)
+		t.Errorf("expected %q, got %q", "", s.Anonymous.Bar)
 	}
 	if s.Named.Foz != "foz" {
-		t.Errorf("expected %s, got %s", "", s.Named.Foz)
+		t.Errorf("expected %q, got %q", "", s.Named.Foz)
 	}
 	if s.Named.Baz != "" {
-		t.Errorf("expected %s, got %s", "", s.Named.Baz)
+		t.Errorf("expected %q, got %q", "", s.Named.Baz)
 	}
 	if s.NamedButSkipped.Hello != "" {
-		t.Errorf("expected %s, got %s", "", s.NamedButSkipped.Hello)
+		t.Errorf("expected %q, got %q", "", s.NamedButSkipped.Hello)
+	}
+}
+
+func TestFallbackPrimaryUsed(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER"`
+	}
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_USER", "Kelsey")
+	os.Setenv("ENV_CONFIG_LEGACY_USER", "Rob")
+
+	if err := Process("env_config", &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.User != "Kelsey" {
+		t.Errorf("expected %q, got %q", "Kelsey", s.User)
+	}
+}
+
+func TestFallbackUsedWhenPrimaryMissing(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER"`
+	}
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_LEGACY_USER", "Rob")
+
+	if err := Process("env_config", &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.User != "Rob" {
+		t.Errorf("expected %q, got %q", "Rob", s.User)
+	}
+}
+
+func TestFallbackFirstMatchWins(t *testing.T) {
+	var s struct {
+		Port string `envconfig:"PORT,LEGACY_PORT,OLD_PORT"`
+	}
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_OLD_PORT", "8081")
+
+	if err := Process("env_config", &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.Port != "8081" {
+		t.Errorf("expected %q, got %q", "8081", s.Port)
+	}
+}
+
+func TestFallbackWithPrefix(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER"`
+	}
+	os.Clearenv()
+	os.Setenv("MYAPP_LEGACY_USER", "Rob")
+
+	if err := Process("myapp", &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.User != "Rob" {
+		t.Errorf("expected %q, got %q", "Rob", s.User)
+	}
+}
+
+func TestFallbackNoneSetRequired(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER" required:"true"`
+	}
+	os.Clearenv()
+
+	err := Process("env_config", &s)
+	if err == nil {
+		t.Fatal("expected error for missing required variable")
+	}
+	// Error should name the primary key.
+	if !strings.Contains(err.Error(), "ENV_CONFIG_USER") {
+		t.Errorf("expected error to mention ENV_CONFIG_USER, got: %s", err)
+	}
+}
+
+func TestFallbackNoneSetWithDefault(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER" default:"Kelsey"`
+	}
+	os.Clearenv()
+
+	if err := Process("env_config", &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.User != "Kelsey" {
+		t.Errorf("expected %q, got %q", "Kelsey", s.User)
+	}
+}
+
+func TestFallbackCheckDisallowed(t *testing.T) {
+	var s struct {
+		User string `envconfig:"USER,LEGACY_USER"`
+	}
+	os.Clearenv()
+	os.Setenv("ENV_CONFIG_USER", "Kelsey")
+	os.Setenv("ENV_CONFIG_LEGACY_USER", "Rob")
+
+	if err := CheckDisallowed("env_config", &s); err != nil {
+		t.Errorf("expected no error, got %s", err)
 	}
 }
 
